@@ -314,10 +314,15 @@ ignored. If no default is specified in the check, a ``ValidateMissingValue``
 exception is raised. If a default is specified then that is passed to the
 check instead.
 
-If the check has ``default=None`` (case sensitive) then ``vtor.check`` will
-*always* return ``None`` (the object). This makes it easy to tell your program
+If the check has ``default=None`` (case sensitive), a missing value or a supplied
+``None`` returns ``None`` (the object). Other supplied values are still checked.
+This makes it easy to tell your program
 that this check contains no useful value when missing, i.e. the value is
 optional, and may be omitted without harm.
+
+Without ``default=None``, a supplied ``None`` is passed to the check like any
+other value. Built-in type checks reject it rather than skipping type and range
+validation. A custom check may choose to accept it.
 
 
 .. note:: 

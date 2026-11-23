@@ -592,7 +592,7 @@ class Validator(object):
                 raise VdtMissingValue()
             value = self._handle_none(default)
         
-        if value is None:
+        if value is None and default == 'None':
             return None
         
         return self._check_value(value, fun_name, fun_args, fun_kwargs)
