@@ -447,6 +447,66 @@ ConfigObj takes the following arguments (with the default values shown) :
     creating a ConfigObj instance from a configspec file you must pass True
     for this argument as well as ``list_values=False``.
 
+* 'include_key': ``None``
+
+    Enable root-level file inclusion using this scalar key as the directive
+    name, for example ``include_key='include'``. ``None`` keeps all keys as
+    ordinary data. Configspecs never expand include directives.
+
+* 'include_base_dir': ``None``
+
+    Base directory for relative include paths when the input is a dictionary,
+    list or file-like object without a filename. Relative paths in named files
+    always resolve against the directory of the file containing the directive.
+
+
+Including configuration files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To load a main configuration and a directory of fragments::
+
+    config = ConfigObj('service.ini', include_key='include')
+
+The main file can contain ordinary ConfigObj syntax::
+
+    # service.ini
+    include = defaults.ini, conf.d/*.ini
+    log_level = warning
+
+Each path or pattern is expanded in list order; matches within a glob are sorted
+lexically. Included files can use the same directive recursively. Files merge
+deeply, later includes override earlier ones, and values authored in the
+containing file override all its includes, regardless of the directive's line
+position. A scalar can replace a section and vice versa. The directive is only
+special at each file's root; a key with the same name inside a section is data.
+
+Paths are literal strings (no ConfigObj interpolation), support ``~`` expansion,
+and may be absolute. Quote paths containing commas or hashes as usual. Empty
+globs are allowed, while a missing literal file raises ``IOError``. Included
+files are never created automatically. Recursive include cycles, including
+aliases through symbolic links, raise ``ConfigObjError`` with the path chain.
+Parse failures identify the included file and retain the original exception
+as their cause.
+
+For anonymous input, supply ``include_base_dir`` when using relative paths::
+
+    config = ConfigObj(['include = conf.d/*.ini'], include_key='include',
+                       include_base_dir='/etc/my-service')
+
+Expansion completes before normal configspec validation. Interpolation is
+deferred until reads, so values can refer across the merged files. Included
+sections belong to the resulting ConfigObj, with correct parent/main links.
+Per-key comments follow the winning source; the containing file retains its
+initial and final comments and output encoding settings. The ``included_files``
+attribute records absolute included paths in traversal order, including repeated
+noncyclic inclusions. ``reload()`` expands the files again using the same options;
+``reset()`` disables inclusion and clears that list.
+
+**The result is a materialized configuration.** ``write()`` writes the merged
+values without the consumed include directive to the normal output destination;
+it does not distribute edits back to included files. To keep the source hierarchy,
+write to a separate file-like object or change ``filename`` before saving.
+
 
 Methods
 -------

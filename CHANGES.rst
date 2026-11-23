@@ -1,6 +1,12 @@
 Changelog
 ---------
 
+Unreleased
+""""""""""
+
+* Add opt-in configuration file includes with deterministic glob expansion,
+  recursive deep merging, cycle detection and included-file provenance.
+
 Release 5.0.9
 """""""""""""
 

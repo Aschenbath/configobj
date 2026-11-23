@@ -119,6 +119,8 @@ OPTION_DEFAULTS = {
     'default_encoding': None,
     'unrepr': False,
     'write_empty_values': False,
+    'include_key': None,
+    'include_base_dir': None,
 }
 
 def getObj(s):
@@ -1171,7 +1173,8 @@ class ConfigObj(Section):
                  interpolation=True, raise_errors=False, list_values=True,
                  create_empty=False, file_error=False, stringify=True,
                  indent_type=None, default_encoding=None, unrepr=False,
-                 write_empty_values=False, _inspec=False):
+                 write_empty_values=False, _inspec=False,
+                 include_key=None, include_base_dir=None):
         """
         Parse a config file or create a config file object.
         
@@ -1179,7 +1182,8 @@ class ConfigObj(Section):
                     interpolation=True, raise_errors=False, list_values=True,
                     create_empty=False, file_error=False, stringify=True,
                     indent_type=None, default_encoding=None, unrepr=False,
-                    write_empty_values=False, _inspec=False)``
+                    write_empty_values=False, _inspec=False,
+                    include_key=None, include_base_dir=None)``
         """
         self._inspec = _inspec
         # init the superclass
@@ -1193,7 +1197,8 @@ class ConfigObj(Section):
                     'create_empty': create_empty, 'file_error': file_error,
                     'stringify': stringify, 'indent_type': indent_type,
                     'default_encoding': default_encoding, 'unrepr': unrepr,
-                    'write_empty_values': write_empty_values}
+                    'write_empty_values': write_empty_values,
+                    'include_key': include_key, 'include_base_dir': include_base_dir}
 
         if options is None:
             options = _options
@@ -1223,6 +1228,7 @@ class ConfigObj(Section):
         configspec = options['configspec']
         self._original_configspec = configspec
         self._load(infile, configspec)
+        self._apply_includes()
         
         
     def _load(self, infile, configspec):
@@ -1354,6 +1360,9 @@ class ConfigObj(Section):
         self.newlines = None
         self.write_empty_values = options['write_empty_values']
         self.unrepr = options['unrepr']
+        self.include_key = options['include_key']
+        self.include_base_dir = options['include_base_dir']
+        self.included_files = ()
         
         self.initial_comment = []
         self.final_comment = []
@@ -1366,6 +1375,13 @@ class ConfigObj(Section):
         Section._initialise(self)
         
         
+    def _apply_includes(self):
+        """Expand explicitly enabled directives after ordinary parsing."""
+        if self.include_key is not None and not self._inspec:
+            from ._includes import expand_includes
+            expand_includes(self)
+
+
     def __repr__(self):
         def _getval(key):
             try:
@@ -2376,6 +2392,7 @@ class ConfigObj(Section):
         self.clear()
         self._initialise(current_options)
         self._load(filename, configspec)
+        self._apply_includes()
         
 
 
